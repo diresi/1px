@@ -1,0 +1,10 @@
+## Language
+Language: Cpp
+Standard: Latest
+
+BasedOnStyle: LLVM
+
+## C++ Rules
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction:         true
