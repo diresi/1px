@@ -1,74 +1,74 @@
-// Written by Ch. Tronche (http://tronche.lri.fr:8000/)
-// Copyright by the author. This is unmaintained, no-warranty free software. 
-// Please use freely. It is appreciated (but by no means mandatory) to
-// acknowledge the author's contribution. Thank you.
-// Started on Thu Jun 26 23:29:03 1997
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <X11/Xlib.h>
+#include <X11/X.h>
+#include <X11/Xutil.h>
 
-//
-// Xlib tutorial: 2nd program
-// Make a window appear on the screen and draw a line inside.
-// If you don't understand this program, go to
-// http://tronche.lri.fr:8000/gui/x/xlib-tutorial/2nd-program-anatomy.html
-//
+#include <cairo.h>
+#include <cairo-xlib.h>
 
-#include <X11/Xlib.h> // Every Xlib program must include this
-#include <assert.h>   // I include this to test return values the lazy way
-#include <unistd.h>   // So we got the profile for 10 seconds
+#include <chrono>
+#include <thread>
 
-#define NIL (0)       // A name for the void pointer
+const int EXIT_ERR = -1;
 
-int main(int, char*[])
-{
-      // Open the display
-
-      Display *dpy = XOpenDisplay(NIL);
-      assert(dpy);
-
-      // Get some colors
-
-      int blackColor = BlackPixel(dpy, DefaultScreen(dpy));
-      int whiteColor = WhitePixel(dpy, DefaultScreen(dpy));
-
-      // Create the window
-
-      Window w = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0, 
-				     200, 100, 0, blackColor, blackColor);
-
-      // We want to get MapNotify events
-
-      XSelectInput(dpy, w, StructureNotifyMask);
-
-      // "Map" the window (that is, make it appear on the screen)
-
-      XMapWindow(dpy, w);
-
-      // Create a "Graphics Context"
-
-      GC gc = XCreateGC(dpy, w, 0, NIL);
-
-      // Tell the GC we draw using the white color
-
-      XSetForeground(dpy, gc, whiteColor);
-
-      // Wait for the MapNotify event
-
-      for(;;) {
-	    XEvent e;
-	    XNextEvent(dpy, &e);
-	    if (e.type == MapNotify)
-		  break;
-      }
-
-      // Draw the line
-      
-      XDrawLine(dpy, w, gc, 0, 0, 0, 200);
-
-      // Send the "DrawLine" request to the server
-
-      XFlush(dpy);
-
-      // Wait for 10 seconds
-
-      sleep(10);
+void draw(cairo_t *cr) {
+    cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
+    cairo_rectangle(cr, 0, 0, 200, 200);
+    cairo_fill(cr);
 }
 
+int main() {
+    Display *d = XOpenDisplay(NULL);
+    Window root = DefaultRootWindow(d);
+    int default_screen = XDefaultScreen(d);
+
+    // these two lines are really all you need
+    XSetWindowAttributes attrs;
+    attrs.override_redirect = true;
+
+    XVisualInfo vinfo;
+    if (!XMatchVisualInfo(d, DefaultScreen(d), 32, TrueColor, &vinfo)) {
+        printf("No visual found supporting 32 bit color, terminating\n");
+        exit(EXIT_ERR);
+    }
+    // these next three lines add 32 bit depth, remove if you dont need and change the flags below
+    attrs.colormap = XCreateColormap(d, root, vinfo.visual, AllocNone);
+    attrs.background_pixel = 0;
+    attrs.border_pixel = 0;
+
+    // Window XCreateWindow(
+    //     Display *display, Window parent,
+    //     int x, int y, unsigned int width, unsigned int height, unsigned int border_width,
+    //     int depth, unsigned int class, 
+    //     Visual *visual,
+    //     unsigned long valuemask, XSetWindowAttributes *attributes
+    // );
+    Window overlay = XCreateWindow(
+        d, root,
+        0, 0, 200, 200, 0,
+        vinfo.depth, InputOutput, 
+        vinfo.visual,
+        CWOverrideRedirect | CWColormap | CWBackPixel | CWBorderPixel, &attrs
+    );
+
+    XMapWindow(d, overlay);
+
+    cairo_surface_t* surf = cairo_xlib_surface_create(d, overlay,
+                                  vinfo.visual,
+                                  200, 200);
+    cairo_t* cr = cairo_create(surf);
+
+    draw(cr);
+    XFlush(d);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surf);
+
+    XUnmapWindow(d, overlay);
+    XCloseDisplay(d);
+    return 0;
+}
