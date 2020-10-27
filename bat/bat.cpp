@@ -1,5 +1,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xfixes.h>
+#include <X11/extensions/shape.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -102,6 +105,13 @@ int main()
       d, root, 0, height - HEIGHT, width, HEIGHT, 0, vinfo.depth, InputOutput,
       vinfo.visual,
       CWOverrideRedirect | CWColormap | CWBackPixel | CWBorderPixel, &attrs);
+
+  // zero out the input region (i.e. pass it all on to the next lower windows)
+  // gratefully taken from https://stackoverflow.com/a/50806584/203515
+  XRectangle rect;
+  XserverRegion region = XFixesCreateRegion(d, &rect, 1);
+  XFixesSetWindowShapeRegion(d, overlay, ShapeInput, 0, 0, region);
+  XFixesDestroyRegion(d, region);
 
   XMapWindow(d, overlay);
 
