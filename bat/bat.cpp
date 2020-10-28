@@ -113,6 +113,7 @@ int main()
   XFixesSetWindowShapeRegion(d, overlay, ShapeInput, 0, 0, region);
   XFixesDestroyRegion(d, region);
 
+  XSelectInput(d, overlay, StructureNotifyMask);
   XMapWindow(d, overlay);
 
   cairo_surface_t *surf =
@@ -120,9 +121,23 @@ int main()
   cairo_t *cr = cairo_create(surf);
 
   int last_cap = 0;
-  while (true) {
-    // FIXME: add graceful shutdown?
 
+  while (true) {
+    XEvent xev;
+    XNextEvent(d, &xev);
+    if (xev.type == MapNotify) {
+      last_cap = get_bat_capacity();
+      draw(cr, last_cap);
+      XFlush(d);
+    }
+  }
+
+  while (true) {
+    // FIXME: add graceful shutdown? Gotta mix X events with timers then. Or
+    // use some thread to emit events with XSendEvent.
+    //
+    // Here we just assume that the window was exposed and will remain so, thus
+    // we just update on battery capacity changes.
     int cap = get_bat_capacity();
     if (cap != last_cap) {
       last_cap = cap;
