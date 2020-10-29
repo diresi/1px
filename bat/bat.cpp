@@ -106,6 +106,12 @@ int main()
       vinfo.visual,
       CWOverrideRedirect | CWColormap | CWBackPixel | CWBorderPixel, &attrs);
 
+  // add some information
+  char name[] = "1pxbat";
+  XStoreName(d, overlay, name);
+  XClassHint ch{name, name};
+  XSetClassHint(d, overlay, &ch);
+
   // zero out the input region (i.e. pass it all on to the next lower windows)
   // gratefully taken from https://stackoverflow.com/a/50806584/203515
   XRectangle rect;
