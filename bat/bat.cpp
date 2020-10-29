@@ -15,7 +15,7 @@
 
 // FIXME: add some argument parser
 const unsigned int INTERVAL = 1000; // ms
-const unsigned int HEIGHT = 5;
+const unsigned int HEIGHT = 3;
 const char *fn_bat = "/sys/class/power_supply/BAT1/capacity";
 
 const int EXIT_ERR = -1;
