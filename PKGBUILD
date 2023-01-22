@@ -1,7 +1,7 @@
 # Maintainer: Christoph Rissner <resi@rissner.net>
 pkgbase=1px
 pkgname=${pkgbase}-git
-pkgver=r17.6b0066c706d1
+pkgver=r18.6b4431f435a5
 pkgrel=1
 pkgdesc="Useful small-space widgets for my X11 desktop (battery level)"
 arch=('i686' 'x86_64')

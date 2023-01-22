@@ -22,7 +22,7 @@ const int EXIT_ERR = -1;
 
 void panic(const char *msg, int err = EXIT_ERR)
 {
-  fprintf(stderr, msg);
+  fputs(msg, stderr);
   exit(err);
 }
 
