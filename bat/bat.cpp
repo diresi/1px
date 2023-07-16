@@ -10,13 +10,17 @@
 #include <cairo.h>
 
 #include <chrono>
+#include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <thread>
+
+using namespace std;
 
 // FIXME: add some argument parser
 const unsigned int INTERVAL = 1000; // ms
 const unsigned int HEIGHT = 3;
-const char *fn_bat = "/sys/class/power_supply/BAT1/capacity";
+const char *basedir = "/sys/class/power_supply/";
 
 const int EXIT_ERR = -1;
 
@@ -26,13 +30,26 @@ void panic(const char *msg, int err = EXIT_ERR)
   exit(err);
 }
 
+
+int read_capacity_file(const filesystem::path& cap)
+{
+  ifstream fin(cap);
+
+  string line;
+  getline(fin, line);
+  return stoi(line);
+}
+
 int get_bat_capacity()
 {
-  std::ifstream fin(fn_bat);
+  auto bd = filesystem::path(basedir);
+  for(const auto &e : filesystem::directory_iterator(bd)) {
+    if (string(e.path().filename()).starts_with("BAT")) {
+      return read_capacity_file(e.path() / "capacity");
+    }
+  }
 
-  std::string line;
-  std::getline(fin, line);
-  return std::stoi(line);
+  return 0;
 }
 
 void draw(cairo_t *cr, int capacity)
@@ -135,7 +152,7 @@ int main()
       draw(cr, cap);
       XFlush(d);
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL));
+    this_thread::sleep_for(chrono::milliseconds(INTERVAL));
   }
 
   cairo_destroy(cr);
